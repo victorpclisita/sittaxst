@@ -17,11 +17,27 @@ document.addEventListener("DOMContentLoaded", () => {
     finalCta.href = config.demoLink;
 
     // Máscaras de input
+    if (document.getElementById('lead-whatsapp')) {
+        new Cleave('#lead-whatsapp', {
+            delimiters: ['(', ') ', '-'],
+            blocks: [0, 2, 5, 4],
+            numericOnly: true
+        });
+    }
+
+    if (document.getElementById('lead-cnpj')) {
+        new Cleave('#lead-cnpj', {
+            delimiters: ['.', '.', '/', '-'],
+            blocks: [2, 3, 3, 4, 2],
+            numericOnly: true
+        });
+    }
+
     // Lógica do Wizard (Agregado Linear 5 Etapas)
     let view = "closed"; // "closed" | "quiz" | "leadForm" | "result"
     let currentStepIndex = 0;
     const stepsData = config.pilars;
-    const totalSteps = 4;
+    const totalSteps = 5;
 
     const wizardContainer = document.getElementById("wizard-steps-container");
     const btnPrev = document.getElementById("btn-prev");
@@ -36,11 +52,12 @@ document.addEventListener("DOMContentLoaded", () => {
         "Processo de Apuração (35%)",
         "Rastreabilidade e Memória (35%)",
         "Controle e Exposição (30%)",
+        "",
         "Resultado do diagnóstico"
     ];
 
     // IDs fixos de cada etapa na ordem exata da máquina de estados
-    const stepIds = ['step-0', 'step-1', 'step-2', 'step-result'];
+    const stepIds = ['step-0', 'step-1', 'step-2', 'step-lead', 'step-result'];
 
     // Construir DOM das Etapas
     stepsData.forEach((pilar, index) => {
@@ -178,9 +195,9 @@ document.addEventListener("DOMContentLoaded", () => {
             diagnosticoSection.classList.remove("hidden");
         }
 
-        // Ocultar cabeçalho principal no resultado
+        // Ocultar cabeçalho principal no formulário de lead e resultado
         const mainHeader = diagnosticoSection.querySelector(".form-header");
-        if (view === "result") {
+        if (view === "leadForm" || view === "result") {
             mainHeader.style.display = "none";
         } else {
             mainHeader.style.display = "block";
@@ -192,7 +209,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!el) return;
 
             let show = false;
+            // Etapas de quiz mostram o pilar respectivo (index 0 a 2)
             if (view === "quiz" && id === `step-${currentStepIndex}`) show = true;
+            // Etapa de lead form
+            else if (view === "leadForm" && id === "step-lead") show = true;
+            // Etapa final e resultado
             else if (view === "result" && id === "step-result") show = true;
 
             if (show) el.classList.remove("hidden");
@@ -204,6 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const progressPercentage = ((currentStepIndex + 1) / 3) * 100;
             progressFill.style.width = `${progressPercentage}%`;
             stepIndicator.textContent = `Etapa ${currentStepIndex + 1} de 3: ${stepNames[currentStepIndex]}`;
+        } else if (view === "leadForm") {
+            progressFill.style.width = `100%`;
+            stepIndicator.textContent = `${stepNames[3]}`;
         } else if (view === "result") {
             progressFill.style.width = `100%`;
             stepIndicator.textContent = `Aqui está o seu resultado e nossas recomendações para seu escritório contábil!`;
@@ -213,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Controle de Botões
         btnPrev.classList.add("hidden");
         btnNext.classList.add("hidden");
+
 
         if (view === "quiz") {
             if (currentStepIndex === 0) {
@@ -225,16 +250,50 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (currentStepIndex === 2) {
                 btnPrev.classList.remove("hidden");
                 btnNext.classList.remove("hidden");
-                btnNext.textContent = "Ver resultado";
+                // Etapa 3 encerra o Quiz
+                btnNext.textContent = "Continuar";
             }
+        } else if (view === "leadForm") {
+            btnPrev.classList.remove("hidden");
+            btnNext.classList.remove("hidden");
+            btnNext.textContent = "Ver resultado";
         }
 
         validateCurrentStep();
     }
 
+    function validarCNPJ(cnpj) {
+        cnpj = cnpj.replace(/\D/g, '');
+        if (cnpj.length !== 14) return false;
+        if (/^(\d)\1+$/.test(cnpj)) return false;
+
+        const calc = (cnpj, pesos) => {
+            const soma = pesos.reduce((acc, peso, i) => acc + parseInt(cnpj[i]) * peso, 0);
+            const resto = soma % 11;
+            return resto < 2 ? 0 : 11 - resto;
+        };
+
+        const d1 = calc(cnpj, [5,4,3,2,9,8,7,6,5,4,3,2]);
+        const d2 = calc(cnpj, [6,5,4,3,2,9,8,7,6,5,4,3,2]);
+
+        return parseInt(cnpj[12]) === d1 && parseInt(cnpj[13]) === d2;
+    }
+
     function validateCurrentStep() {
         if (view === "result") {
             btnNext.disabled = false;
+            return;
+        }
+
+        if (view === "leadForm") {
+            const nome = document.getElementById("lead-nome").value.trim();
+            const email = document.getElementById("lead-email").value.trim();
+            const whats = document.getElementById("lead-whatsapp").value.trim();
+            const cnpj = document.getElementById("lead-cnpj").value.trim();
+
+            const cnpjRaw = cnpj.replace(/\D/g, '');
+            const isComplete = nome !== "" && email.includes("@") && whats.length >= 10 && validarCNPJ(cnpjRaw);
+            btnNext.disabled = !isComplete;
             return;
         }
 
@@ -262,20 +321,86 @@ document.addEventListener("DOMContentLoaded", () => {
             if (currentStepIndex < 2) {
                 currentStepIndex++;
             } else if (currentStepIndex === 2) {
-                calculateAndShowResult();
-                return;
+                console.log("nav to lead form");
+                view = "leadForm";
+                // Deixa index = 3 mas formata view correta
+                currentStepIndex = 3;
             }
             updateWizardUI();
 
             // Scroll suave pro topo do container nas transições
             const y = diagnosticoSection.getBoundingClientRect().top + window.scrollY - 50;
             window.scrollTo({ top: y, behavior: 'smooth' });
+        } else if (view === "leadForm") {
+            console.log("nav to result (gerando score direto)");
+
+            // Capturar dados do lead
+            const nome = document.getElementById("lead-nome").value.trim();
+            const email = document.getElementById("lead-email").value.trim();
+            const whats = document.getElementById("lead-whatsapp").value.trim();
+            const cnpj = document.getElementById("lead-cnpj").value.trim();
+            const cnpjRaw = cnpj.replace(/\D/g, '');
+
+            // Calcular score para enviar junto
+            let pilarTotals = { p1: 0, p2: 0, p3: 0 };
+            config.questions.forEach(q => {
+                const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (selected) pilarTotals[q.pilar] += parseInt(selected.value);
+            });
+            let scoreCalculado = 0;
+            config.pilars.forEach(pilar => {
+                const maxSomaPilar = 30;
+                scoreCalculado += (pilarTotals[pilar.id] / maxSomaPilar) * pilar.weight * 10;
+            });
+            scoreCalculado = parseFloat(scoreCalculado.toFixed(1));
+
+            // Consultar ReceitaWS e enviar webhook com dados enriquecidos
+            fetch(`https://receitaws.com.br/v1/cnpj/${cnpjRaw}/days/30`, {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Authorization": "Bearer 475ef0b30a4073e9d46ea5b847db66b1025c3348d2fdc3569ff19b864f3eddff"
+                }
+            })
+            .then(res => res.json())
+            .then(dadosCNPJ => {
+                fetch("https://n8n.sittax.com.br/webhook/lpdiagnostico", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nome,
+                        email,
+                        whatsapp: whats,
+                        cnpj,
+                        score: scoreCalculado,
+                        tipo: dadosCNPJ.tipo || "",
+                        porte: dadosCNPJ.porte || "",
+                        razao_social: dadosCNPJ.nome || "",
+                        nome_fantasia: dadosCNPJ.fantasia || "",
+                        atividade_principal: dadosCNPJ.atividade_principal?.[0]?.text || ""
+                    })
+                }).catch(err => console.warn("Webhook error:", err));
+            })
+            .catch(() => {
+                // Se a API falhar, envia webhook sem os dados do CNPJ
+                fetch("https://n8n.sittax.com.br/webhook/lpdiagnostico", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nome, email, whatsapp: whats, cnpj, score: scoreCalculado })
+                }).catch(err => console.warn("Webhook error:", err));
+            });
+
+            calculateAndShowResult();
         }
     });
 
     btnPrev.addEventListener("click", () => {
         if (view === "quiz" && currentStepIndex > 0) {
             currentStepIndex--;
+        } else if (view === "leadForm") {
+            console.log("back to quiz");
+            view = "quiz";
+            currentStepIndex = 2;
         }
         updateWizardUI();
 
