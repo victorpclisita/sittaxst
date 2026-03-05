@@ -1,0 +1,47 @@
+====================================================
+  SITTAX ST — LANDING PAGE | INSTRUÇÕES DE USO
+====================================================
+
+ESTRUTURA DE ARQUIVOS
+---------------------
+  index.html      → Página principal (versão modular)
+  style.css       → Todos os estilos da landing page
+  app.js          → Scripts: countdown, FAQ accordion, smooth scroll
+  config.js       → Variáveis de configuração (edite aqui)
+  README.md       → Documentação técnica
+  desktop.ini     → Configuração de pasta (Windows)
+
+COMO ATUALIZAR O CONTEÚDO
+--------------------------
+1. DATA DE ENCERRAMENTO
+   Abra config.js e altere LAUNCH_DEADLINE.
+
+2. VAGAS RESTANTES
+   Abra config.js e altere SLOTS_TAKEN (vagas preenchidas).
+
+3. VÍDEO DO YOUTUBE
+   Abra config.js e altere YOUTUBE_ID com o novo ID do vídeo.
+
+4. TEXTOS E COPY
+   Edite diretamente no index.html.
+   Textos em laranja usam a classe CSS: class="...-orange"
+
+5. BOTÕES DO ECOSSISTEMA
+   Altere UTM_SIMPLES e UTM_RECUPERA em config.js.
+
+COMO PUBLICAR ATUALIZAÇÕES NO GITHUB
+--------------------------------------
+  git add .
+  git commit -m "descrição da alteração"
+  git push
+
+URL DA PÁGINA (GitHub Pages)
+------------------------------
+  https://victorpclisita.github.io/sittaxst/
+
+SUPORTE TÉCNICO
+---------------
+  Desenvolvido com Claude (Anthropic) — claude.ai
+  Repositório: https://github.com/victorpclisita/sittaxst
+
+====================================================
