@@ -339,7 +339,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const email = document.getElementById("lead-email").value.trim();
             const whats = document.getElementById("lead-whatsapp").value.trim();
             const cnpj = document.getElementById("lead-cnpj").value.trim();
-            const cnpjRaw = cnpj.replace(/\D/g, '');
 
             // Calcular score para enviar junto
             let pilarTotals = { p1: 0, p2: 0, p3: 0 };
@@ -354,41 +353,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             scoreCalculado = parseFloat(scoreCalculado.toFixed(1));
 
-            // Consultar ReceitaWS e enviar webhook com dados enriquecidos
-            fetch(`https://receitaws.com.br/v1/cnpj/${cnpjRaw}/days/30`, {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json",
-                    "Authorization": "Bearer 475ef0b30a4073e9d46ea5b847db66b1025c3348d2fdc3569ff19b864f3eddff"
-                }
-            })
-            .then(res => res.json())
-            .then(dadosCNPJ => {
-                fetch("https://n8n.sittax.com.br/webhook/lpdiagnostico", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        nome,
-                        email,
-                        whatsapp: whats,
-                        cnpj,
-                        score: scoreCalculado,
-                        tipo: dadosCNPJ.tipo || "",
-                        porte: dadosCNPJ.porte || "",
-                        razao_social: dadosCNPJ.nome || "",
-                        nome_fantasia: dadosCNPJ.fantasia || "",
-                        atividade_principal: dadosCNPJ.atividade_principal?.[0]?.text || ""
-                    })
-                }).catch(err => console.warn("Webhook error:", err));
-            })
-            .catch(() => {
-                // Se a API falhar, envia webhook sem os dados do CNPJ
-                fetch("https://n8n.sittax.com.br/webhook/lpdiagnostico", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ nome, email, whatsapp: whats, cnpj, score: scoreCalculado })
-                }).catch(err => console.warn("Webhook error:", err));
-            });
+            // Enviar para webhook
+            fetch("https://n8n.sittax.com.br/webhook/lpdiagnostico", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, email, whatsapp: whats, cnpj, score: scoreCalculado })
+            }).catch(err => console.warn("Webhook error:", err));
 
             calculateAndShowResult();
         }
