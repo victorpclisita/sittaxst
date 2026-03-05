@@ -50,7 +50,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   // ── FORMULÁRIO → N8N ──
-  const N8N_WEBHOOK = 'https://n8n.sittax.com.br/webhook/lpsittaxsitmarketing';
+  const N8N_WEBHOOK  = 'https://n8n.sittax.com.br/webhook/lpsittaxsitmarketing';
+  const THANKYOU_URL = 'https://lp.sittax.com.br/obrigado';
+
+  // Estilo de erro inline
+  const errorStyle = '2px solid #e84040';
+  const normalStyle = '';
+
+  function setError(el, hasError) {
+    if (!el) return;
+    el.style.border = hasError ? errorStyle : normalStyle;
+    el.style.outline = hasError ? 'none' : '';
+  }
+
+  function clearErrors() {
+    ['nome','whatsapp','cnpj','estado','cliente'].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.border = normalStyle;
+    });
+  }
+
+  // Limpa erro ao digitar/selecionar
+  ['nome','whatsapp','cnpj','estado','cliente'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() { setError(el, false); });
+    if (el) el.addEventListener('change', function() { setError(el, false); });
+  });
 
   const submitBtn = document.querySelector('.btn-submit');
   if (!submitBtn) return;
@@ -58,16 +83,27 @@ document.addEventListener('DOMContentLoaded', function () {
   submitBtn.addEventListener('click', async function (e) {
     e.preventDefault();
 
-    const nome     = document.getElementById('nome')?.value?.trim() || '';
-    const whatsapp = document.getElementById('whatsapp')?.value?.trim() || '';
-    const cnpj     = document.getElementById('cnpj')?.value?.trim() || '';
-    const estado   = document.getElementById('estado')?.value || '';
-    const cliente  = document.getElementById('cliente')?.value || '';
+    const nomeEl     = document.getElementById('nome');
+    const whatsappEl = document.getElementById('whatsapp');
+    const cnpjEl     = document.getElementById('cnpj');
+    const estadoEl   = document.getElementById('estado');
+    const clienteEl  = document.getElementById('cliente');
 
-    if (!nome || !whatsapp) {
-      alert('Por favor, preencha pelo menos nome e WhatsApp.');
-      return;
-    }
+    const nome     = nomeEl?.value?.trim() || '';
+    const whatsapp = whatsappEl?.value?.trim() || '';
+    const cnpj     = cnpjEl?.value?.trim() || '';
+    const estado   = estadoEl?.value || '';
+    const cliente  = clienteEl?.value || '';
+
+    // Validação — todos obrigatórios
+    let hasError = false;
+    if (!nome)     { setError(nomeEl, true);     hasError = true; }
+    if (!whatsapp) { setError(whatsappEl, true);  hasError = true; }
+    if (!cnpj)     { setError(cnpjEl, true);      hasError = true; }
+    if (!estado)   { setError(estadoEl, true);    hasError = true; }
+    if (!cliente)  { setError(clienteEl, true);   hasError = true; }
+
+    if (hasError) return;
 
     const originalHTML  = submitBtn.innerHTML;
     submitBtn.innerHTML = 'Enviando...';
@@ -88,14 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
       });
 
-      submitBtn.innerHTML           = '✓ Recebido! Entraremos em contato.';
-      submitBtn.style.background    = '#1a9e5c';
-      submitBtn.style.pointerEvents = 'none';
-
-      ['nome','whatsapp','cnpj','estado','cliente'].forEach(function(id) {
-        const el = document.getElementById(id);
-        if (el) el.disabled = true;
-      });
+      window.location.href = THANKYOU_URL;
 
     } catch (err) {
       submitBtn.innerHTML = originalHTML;
